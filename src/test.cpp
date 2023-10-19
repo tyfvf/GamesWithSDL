@@ -2,6 +2,8 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <iostream>
+#include <vector>
+#include <sstream>
 
 int main(int argc, char* argv[]){
 
@@ -21,27 +23,40 @@ int main(int argc, char* argv[]){
     SDL_FreeSurface(fontSurface);
 
     SDL_Texture* grassTex = IMG_LoadTexture(renderer, "res/grass.png");
-    SDL_Rect src;
-    SDL_Rect dst;
+    SDL_Rect srcPlayer;
+    SDL_Rect dstPlayer;
     SDL_Rect dstFont;
 
-    src.x = 0;
-    src.y = 0;
-    src.w = 32;
-    src.h = 32;
+    srcPlayer.x = 0;
+    srcPlayer.y = 0;
+    srcPlayer.w = 32;
+    srcPlayer.h = 32;
 
-    dst.x = WINDOW_WIDTH / 2;
-    dst.y = WINDOW_HEIGHT / 2;
-    dst.w = 32;
-    dst.h = 32;
+    dstPlayer.x = WINDOW_WIDTH / 2;
+    dstPlayer.y = WINDOW_HEIGHT / 2;
+    dstPlayer.w = 32;
+    dstPlayer.h = 32;
 
     dstFont.x = WINDOW_WIDTH / 2;
     dstFont.y = 0;
+
     SDL_QueryTexture(fontTexture, nullptr, nullptr, &dstFont.w, &dstFont.h);
+
+    std::vector<SDL_Rect> enemies;
+
+    for(int i = 0; i < 20; i++){
+        SDL_Rect dst;
+        dst.x = std::rand() % WINDOW_WIDTH;
+        dst.y = -1 * (std::rand() % 300 + 100);
+        dst.w = 32;
+        dst.h = 32;
+        enemies.emplace_back(dst);
+    }
 
     int xvelocity = 0;
     int yvelocity = 0;
     int speed = 5;
+    int count = 0;
 
     bool gameRunning = true;
 
@@ -92,12 +107,41 @@ int main(int argc, char* argv[]){
             }
         }
 
-        dst.x += xvelocity * speed;
-        dst.y += yvelocity * speed;
+        dstPlayer.x += xvelocity * speed;
+        dstPlayer.y += yvelocity * speed;
 
         SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, grassTex, &src, &dst);
+        SDL_RenderCopy(renderer, grassTex, &srcPlayer, &dstPlayer);
+
+        for(uint8_t i = 0; i < enemies.size(); i++){
+            enemies[i].y += 5;
+            SDL_RenderCopy(renderer, grassTex, &srcPlayer, &enemies[i]);
+            if(enemies[i].y > WINDOW_HEIGHT + 50){
+                enemies[i].y = -1 * (std::rand() % 300 + 100);
+                enemies[i].x = std::rand() % WINDOW_WIDTH;
+                count++;
+            }
+            if(
+                enemies[i].x + enemies[i].w >= dstPlayer.x &&
+                dstPlayer.x + dstPlayer.w >= enemies[i].x &&
+                enemies[i].y + enemies[i].h >= dstPlayer.y &&
+                dstPlayer.y + dstPlayer.h >= enemies[i].y 
+            ){
+                count = 0;
+                enemies[i].y = -1 * (std::rand() % 50 + 100);
+                enemies[i].x = std::rand() % WINDOW_WIDTH;
+                dstPlayer.x = WINDOW_WIDTH / 2;
+                dstPlayer.y = WINDOW_HEIGHT / 2;
+            }
+        }
+
+        std::stringstream convert;
+        convert << count;
+        SDL_Surface* fontSurface = TTF_RenderText_Blended(comicSans, convert.str().c_str(), SDL_Color{0, 0, 0, 255});
+        SDL_Texture* fontTexture = SDL_CreateTextureFromSurface(renderer, fontSurface);
+        SDL_FreeSurface(fontSurface);
         SDL_RenderCopy(renderer, fontTexture, nullptr, &dstFont);
+        
         SDL_RenderPresent(renderer);
 
     }
