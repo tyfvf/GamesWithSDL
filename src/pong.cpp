@@ -1,8 +1,11 @@
 #include <iostream>
 #include <sstream>
+#include <random>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+
+bool AABB(SDL_Rect a, SDL_Rect b);
 
 int main(int argc, char* argv[]){
 
@@ -25,11 +28,27 @@ int main(int argc, char* argv[]){
     SDL_Texture* fontTexture = SDL_CreateTextureFromSurface(renderer, fontSurface);
     SDL_FreeSurface(fontSurface);
 
+    SDL_Rect font1;
+    font1.x = WINDOW_WIDTH / 2 - 75;
+    font1.y = 50;
+
+    SDL_Rect font2;
+    font2.x = WINDOW_WIDTH / 2 + 50;
+    font2.y = 50;
+
+    SDL_QueryTexture(fontTexture, nullptr, nullptr, &font1.w, &font1.h);
+    SDL_QueryTexture(fontTexture, nullptr, nullptr, &font2.w, &font2.h);
+
     SDL_Rect ball;
     ball.w = 20;
     ball.h = 20;
     ball.x = WINDOW_WIDTH / 2 - 12;
     ball.y = WINDOW_HEIGHT / 2 - 12;
+    int x = rand() % 2;
+    int choices[2] = {1, -1};
+    int ballxvelocity = choices[x];
+    int ballyvelocity = choices[x];
+    int ballspeed = 2;
 
     SDL_Rect player;
     player.w = 25;
@@ -47,20 +66,9 @@ int main(int argc, char* argv[]){
     int velocity2 = 0;
     int count2 = 0;
 
-    SDL_Rect font1;
-    font1.x = WINDOW_WIDTH / 2 + 50;
-    font1.y = 50;
-
-    SDL_Rect font2;
-    font2.x = WINDOW_WIDTH / 2 - 75;
-    font2.y = 50;
-
-    SDL_QueryTexture(fontTexture, nullptr, nullptr, &font1.w, &font1.h);
-    SDL_QueryTexture(fontTexture, nullptr, nullptr, &font2.w, &font2.h);
-
     bool gameRunning = true;
     SDL_Event event;
-    int speed = 5;
+    int speed = 7;
 
     while(gameRunning){
 
@@ -84,6 +92,19 @@ int main(int argc, char* argv[]){
                     case SDLK_DOWN:
                         velocity2 = 1;
                         break;
+                    case SDLK_r:
+                        count1 = 0;
+                        count2 = 0;
+                        ball.x = WINDOW_WIDTH / 2 - 12;
+                        ball.y = WINDOW_HEIGHT / 2 - 12;
+                        x = rand() % 2;
+                        ballxvelocity = choices[x];
+                        ballyvelocity = choices[x];
+                        ballspeed = 2;
+                        player.y = WINDOW_HEIGHT / 2 - player.h / 2;
+                        player.x = 10;
+                        player2.x = WINDOW_WIDTH - player2.w - 10;
+                        player2.y = WINDOW_HEIGHT / 2 - player2.h / 2;
                     default:
                         break;
                 }
@@ -142,6 +163,43 @@ int main(int argc, char* argv[]){
         SDL_Texture* fontTexture2 = SDL_CreateTextureFromSurface(renderer, fontSurface2);
         SDL_FreeSurface(fontSurface2);
 
+        ball.x += ballxvelocity * ballspeed;
+        ball.y += ballyvelocity * ballspeed;
+
+        if(ball.y + ball.h >= WINDOW_HEIGHT){
+            ballyvelocity *= -1;
+        }
+        if(ball.y <= 0){
+            ballyvelocity *= -1;
+        }
+        if(AABB(ball, player2)){
+            ballxvelocity *= -1;
+            ballspeed += 1;
+        }
+        if(AABB(ball, player)){
+            ballxvelocity *= -1;
+            ballspeed += 1;
+        }
+
+        if(ball.x + ball.w >= WINDOW_WIDTH){
+            count1 += 1;
+            ball.x = WINDOW_WIDTH / 2 - 12;
+            ball.y = WINDOW_HEIGHT / 2 - 12;
+            x = rand() % 2;
+            ballxvelocity = choices[x];
+            ballyvelocity = choices[x];
+            ballspeed = 2;
+        }
+        if(ball.x <= 0){
+            count2 += 1;
+            ball.x = WINDOW_WIDTH / 2 - 12;
+            ball.y = WINDOW_HEIGHT / 2 - 12;
+            x = rand() % 2;
+            ballxvelocity = choices[x];
+            ballyvelocity = choices[x];
+            ballspeed = 2;
+        }
+
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &player);
@@ -164,4 +222,12 @@ int main(int argc, char* argv[]){
 
 
     return 0;
+}
+
+bool AABB(SDL_Rect a, SDL_Rect b){
+    if(a.x + a.w >= b.x && b.x + b.w >= a.x && a.y + a.h >= b.y && b.y + b.h >= a.y){
+        return true;
+    }else{
+        return false;
+    }
 }
