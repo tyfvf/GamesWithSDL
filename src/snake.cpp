@@ -1,11 +1,11 @@
 #include <iostream>
+#include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
 SDL_Rect CreateRect(int x, int y, int w, int h);
 void DrawRect(int r, int g, int b, int a, SDL_Renderer* renderer, SDL_Rect rect);
-bool AABB(SDL_Rect a, SDL_Rect b);
 std::tuple<int, int> GenerateRandomXYPosition(int window_width, int window_height);
 
 int main(int argc, char* argv[]){
@@ -24,8 +24,9 @@ int main(int argc, char* argv[]){
     SDL_Window* window = SDL_CreateWindow("Snake game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
+    std::vector <SDL_Rect> snake = {CreateRect(0, 0, 25, 25)};
+
     std::tuple<int, int> xy = GenerateRandomXYPosition(WINDOW_WIDTH, WINDOW_HEIGHT);
-    SDL_Rect snake = CreateRect(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 25, 25);
     SDL_Rect apple = CreateRect(std::get<0>(xy), std::get<1>(xy), 25, 25);
     int xvelocity = 0;
     int yvelocity = 0;
@@ -50,47 +51,72 @@ int main(int argc, char* argv[]){
             if(event.type == SDL_KEYDOWN){
                 switch(event.key.keysym.sym){
                     case SDLK_w:
-                        yvelocity = -1;
-                        xvelocity = 0;
+                        if(yvelocity != 1){
+                            yvelocity = -1;
+                            xvelocity = 0;
+                        } 
                         break;
                     case SDLK_d:
-                        yvelocity = 0;
-                        xvelocity = 1;
+                        if(xvelocity != -1){
+                            yvelocity = 0;
+                            xvelocity = 1;
+                        } 
                         break;
                     case SDLK_s:
-                        yvelocity = 1;
-                        xvelocity = 0;
+                        if(yvelocity != -1){
+                            yvelocity = 1;
+                            xvelocity = 0;
+                        }  
                         break;
                     case SDLK_a:
-                        yvelocity = 0;
-                        xvelocity = -1;
+                        if(xvelocity != 1){
+                            yvelocity = 0;
+                            xvelocity = -1;
+                        } 
                         break;
                 }
             }
         }
-        snake.x += xvelocity * speed;
-        snake.y += yvelocity * speed;
+        
+        for(uint16_t i = snake.size(); i > 0; i--){
+            snake[i].x = snake[i-1].x;
+            snake[i].y = snake[i-1].y;
+        }
+        snake[0].x += xvelocity * speed; 
+        snake[0].y += yvelocity * speed;
 
-        if(snake.x + snake.w >= WINDOW_WIDTH){
-            snake.x = WINDOW_WIDTH - snake.w;
+        if(snake[0].x + snake[0].w > WINDOW_WIDTH){
+            snake[0].x = 0;
         }
-        if(snake.x <= 0){
-            snake.x = 0;
+        if(snake[0].x < 0){
+            snake[0].x = WINDOW_WIDTH;
         }
-        if(snake.y + snake.h >= WINDOW_HEIGHT){
-            snake.y = WINDOW_HEIGHT - snake.h;
+        if(snake[0].y + snake[0].h > WINDOW_HEIGHT){
+            snake[0].y = 0;
         }
-        if(snake.y <= 0){
-            snake.y = 0;
+        if(snake[0].y < 0){
+            snake[0].y = WINDOW_HEIGHT;
         }
-        if(AABB(snake, apple)){
+        if(snake[0].x == apple.x && snake[0].y == apple.y){
             xy = GenerateRandomXYPosition(WINDOW_WIDTH, WINDOW_HEIGHT);
             apple.x = std::get<0>(xy);
             apple.y = std::get<1>(xy);
+            snake.emplace_back(CreateRect(-30, -30, 25, 25));
+        }
+        for(uint16_t i = 0; i < snake.size(); i++){
+            if(i == 0){
+                continue;
+            }
+
+            if(snake[0].x == snake[i].x && snake[0].y == snake[i].y){
+                gameRunning = false;
+            }
         }
 
         SDL_RenderClear(renderer);
-        DrawRect(0, 255, 0, 255, renderer, snake);
+        for(SDL_Rect piece : snake){
+            DrawRect(0, 255, 0, 255, renderer, piece);
+        }
         DrawRect(255, 0, 0, 255, renderer, apple);
         SDL_RenderPresent(renderer);
 
@@ -123,19 +149,6 @@ void DrawRect(int r, int g, int b, int a, SDL_Renderer* renderer, SDL_Rect rect)
         SDL_RenderDrawRect(renderer, &rect);
         SDL_RenderFillRect(renderer, &rect);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-}
-
-bool AABB(SDL_Rect a, SDL_Rect b){
-    if(
-        a.x + a.w >= b.x &&
-        b.x + b.w >= a.x &&
-        a.y + a.h >= b.y &&
-        b.y + b.h >= a.y 
-    ){
-        return true;
-    }else{
-        return false;
-    }
 }
 
 std::tuple<int, int> GenerateRandomXYPosition(int window_width, int window_height){
