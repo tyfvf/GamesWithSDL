@@ -145,10 +145,10 @@ SDL_Rect CreateRect(int x, int y, int w, int h){
 }
 
 void DrawRect(int r, int g, int b, int a, SDL_Renderer* renderer, SDL_Rect rect){
-        SDL_SetRenderDrawColor(renderer, r, g, b, a);
-        SDL_RenderDrawRect(renderer, &rect);
-        SDL_RenderFillRect(renderer, &rect);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
+    SDL_RenderDrawRect(renderer, &rect);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 }
 
 std::tuple<int, int> GenerateRandomXYPosition(int window_width, int window_height){
