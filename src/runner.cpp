@@ -1,9 +1,10 @@
 #include <iostream>
+#include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
-SDL_Rect CreateRect(int x, int y, int w, int h);
+std::vector <SDL_Rect> CreateRect(int x, int y, int w, int h);
 bool AABB(SDL_Rect a, SDL_Rect b);
 
 int main(int argc, char* argv[]){
@@ -17,16 +18,29 @@ int main(int argc, char* argv[]){
     }
 
     const int WINDOW_WIDTH = 800;
-    const int WINDOW_HEIGHT = 600;
+    const int WINDOW_HEIGHT = 400;
     
     SDL_Window* window = SDL_CreateWindow("Runner", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    SDL_Rect player = CreateRect(100, WINDOW_HEIGHT - 32, 32, 32);
+    SDL_Texture* skyTex = IMG_LoadTexture(renderer, "res/sky.png");
+    SDL_Texture* groundTex = IMG_LoadTexture(renderer, "res/ground.png");
+    SDL_Texture* playerTex = IMG_LoadTexture(renderer, "res/player.png");
+    SDL_Texture* snailTex = IMG_LoadTexture(renderer, "res/snail.png");
+
+    std::vector <SDL_Rect> skyRect = CreateRect(0, 0, 800, 300);
+    
+    std::vector <SDL_Rect> groundRect = CreateRect(0, skyRect[1].h, 800, 100);
+
+    std::vector <SDL_Rect> playerRect = CreateRect(100, WINDOW_HEIGHT - 32, 32, 32);
+    SDL_QueryTexture(playerTex, nullptr, nullptr, &playerRect[0].w, &playerRect[0].h);
+    SDL_QueryTexture(playerTex, nullptr, nullptr, &playerRect[1].w, &playerRect[1].h);
     int velocity = 1;
     int speed = 5;
 
-    SDL_Rect enemy = CreateRect(WINDOW_WIDTH, WINDOW_HEIGHT - 32, 32, 32);
+    std::vector <SDL_Rect> snailRect = CreateRect(WINDOW_WIDTH, skyRect[1].h - 32, 32, 32);
+    SDL_QueryTexture(snailTex, nullptr, nullptr, &snailRect[0].w, &snailRect[0].h);
+    SDL_QueryTexture(snailTex, nullptr, nullptr, &snailRect[1].w, &snailRect[1].h);
 
     SDL_Event event;
     bool gameRunning = true;
@@ -55,28 +69,26 @@ int main(int argc, char* argv[]){
 
         }
 
-        player.y += velocity * speed;
-        enemy.x -= 5;
+        playerRect[1].y += velocity * speed;
+        snailRect[1].x -= 5;
 
-        if(AABB(player, enemy)){
+        if(AABB(playerRect[1], snailRect[1])){
             std::cout << "HIT" << "\n";
         }
 
-        if(player.y  + player.h >= WINDOW_HEIGHT){
-            player.y = WINDOW_HEIGHT - player.h;
+        if(playerRect[1].y  + playerRect[1].h >= skyRect[1].h){
+            playerRect[1].y = skyRect[1].h - playerRect[1].h;
         }
 
-        if(enemy.x < 0){
-            enemy.x = WINDOW_WIDTH;
+        if(snailRect[1].x < 0){
+            snailRect[1].x = WINDOW_WIDTH;
         }
 
         SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderDrawRect(renderer, &player);
-        SDL_RenderFillRect(renderer, &player);
-        SDL_RenderDrawRect(renderer, &enemy);
-        SDL_RenderFillRect(renderer, &enemy);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderCopy(renderer, skyTex, &skyRect[0], &skyRect[1]);
+        SDL_RenderCopy(renderer, groundTex, &groundRect[0], &groundRect[1]);
+        SDL_RenderCopy(renderer, playerTex, &playerRect[0], &playerRect[1]);
+        SDL_RenderCopy(renderer, snailTex, &snailRect[0], &snailRect[1]);
         SDL_RenderPresent(renderer);
     }
 
@@ -87,12 +99,22 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
-SDL_Rect CreateRect(int x, int y, int w, int h){
-    SDL_Rect rect;
-    rect.x = x;
-    rect.y = y;
-    rect.w = w;
-    rect.h = h;
+std::vector <SDL_Rect> CreateRect(int x, int y, int w, int h){
+    SDL_Rect srcRect;
+    srcRect.x = 0;
+    srcRect.y = 0;
+    srcRect.w = w;
+    srcRect.h = h;
+
+    SDL_Rect dstRect;
+    dstRect.x = x;
+    dstRect.y = y;
+    dstRect.w = w;
+    dstRect.h = h;
+
+    std::vector <SDL_Rect> rect;
+    rect.emplace_back(srcRect);
+    rect.emplace_back(dstRect);
 
     return rect;
 }
