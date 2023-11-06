@@ -23,22 +23,8 @@ int main(int argc, char* argv[]){
     SDL_FreeSurface(fontSurface);
 
     SDL_Texture* grassTex = IMG_LoadTexture(renderer, "res/grass.png");
-    SDL_Rect srcPlayer;
-    SDL_Rect dstPlayer;
-    SDL_Rect dstFont;
-
-    srcPlayer.x = 0;
-    srcPlayer.y = 0;
-    srcPlayer.w = 32;
-    srcPlayer.h = 32;
-
-    dstPlayer.x = WINDOW_WIDTH / 2;
-    dstPlayer.y = WINDOW_HEIGHT / 2;
-    dstPlayer.w = 32;
-    dstPlayer.h = 32;
-
-    dstFont.x = WINDOW_WIDTH / 2;
-    dstFont.y = 0;
+    SDL_Rect dstPlayer {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 32, 32};
+    SDL_Rect dstFont {WINDOW_WIDTH / 2, 0, 0, 0};
 
     SDL_QueryTexture(fontTexture, nullptr, nullptr, &dstFont.w, &dstFont.h);
 
@@ -111,11 +97,11 @@ int main(int argc, char* argv[]){
         dstPlayer.y += yvelocity * speed;
 
         SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, grassTex, &srcPlayer, &dstPlayer);
+        SDL_RenderCopy(renderer, grassTex, nullptr, &dstPlayer);
 
         for(uint8_t i = 0; i < enemies.size(); i++){
             enemies[i].y += 5;
-            SDL_RenderCopy(renderer, grassTex, &srcPlayer, &enemies[i]);
+            SDL_RenderCopy(renderer, grassTex, nullptr, &enemies[i]);
             if(enemies[i].y > WINDOW_HEIGHT + 50){
                 enemies[i].y = -1 * (std::rand() % 300 + 100);
                 enemies[i].x = std::rand() % WINDOW_WIDTH;

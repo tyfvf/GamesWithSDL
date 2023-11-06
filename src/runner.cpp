@@ -34,15 +34,15 @@ int main(int argc, char* argv[]){
 
     
 
-    SDL_Rect skyRect = {0, 0, 800, 300};
+    SDL_Rect skyRect {0, 0, 800, 300};
     SDL_Rect playerRect = {100, WINDOW_HEIGHT - 32, 32, 32};
     SDL_QueryTexture(playerTex, nullptr, nullptr, &playerRect.w, &playerRect.h);
-    SDL_Rect groundRect = {0, skyRect.h, 800, 100};
-    SDL_Rect snailRect = {WINDOW_WIDTH, skyRect.h - 32, 32, 32};
+    SDL_Rect groundRect {0, skyRect.h, 800, 100};
+    SDL_Rect snailRect {WINDOW_WIDTH, skyRect.h - 32, 32, 32};
     SDL_QueryTexture(snailTex, nullptr, nullptr, &snailRect.w, &snailRect.h);
-    SDL_Rect flyRect = {WINDOW_WIDTH, skyRect.h - 120, 32, 32};
+    SDL_Rect flyRect {WINDOW_WIDTH, skyRect.h - 120, 32, 32};
     SDL_QueryTexture(flyTex, nullptr, nullptr, &flyRect.w, &flyRect.h);
-    SDL_Rect fontRect = {WINDOW_WIDTH / 2, 0, 32, 32};
+    SDL_Rect fontRect {WINDOW_WIDTH / 2, 0, 32, 32};
     
 
     int velocity = 1;

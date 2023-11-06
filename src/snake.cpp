@@ -4,7 +4,6 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
-SDL_Rect CreateRect(int x, int y, int w, int h);
 void DrawRect(int r, int g, int b, int a, SDL_Renderer* renderer, SDL_Rect rect);
 std::tuple<int, int> GenerateRandomXYPosition(int window_width, int window_height);
 
@@ -24,10 +23,10 @@ int main(int argc, char* argv[]){
     SDL_Window* window = SDL_CreateWindow("Snake game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    std::vector <SDL_Rect> snake = {CreateRect(0, 0, 25, 25)};
+    std::vector <SDL_Rect> snake = {SDL_Rect{0, 0, 25, 25}};
 
     std::tuple<int, int> xy = GenerateRandomXYPosition(WINDOW_WIDTH, WINDOW_HEIGHT);
-    SDL_Rect apple = CreateRect(std::get<0>(xy), std::get<1>(xy), 25, 25);
+    SDL_Rect apple {std::get<0>(xy), std::get<1>(xy), 25, 25};
     int xvelocity = 0;
     int yvelocity = 0;
     int speed = 25;
@@ -101,7 +100,7 @@ int main(int argc, char* argv[]){
             xy = GenerateRandomXYPosition(WINDOW_WIDTH, WINDOW_HEIGHT);
             apple.x = std::get<0>(xy);
             apple.y = std::get<1>(xy);
-            snake.emplace_back(CreateRect(-30, -30, 25, 25));
+            snake.emplace_back(SDL_Rect{-30, -30, 25, 25});
         }
         for(uint16_t i = 0; i < snake.size(); i++){
             if(i == 0){
@@ -132,16 +131,6 @@ int main(int argc, char* argv[]){
 
     
     return 0;
-}
-
-SDL_Rect CreateRect(int x, int y, int w, int h){
-    SDL_Rect rect;
-    rect.x = x;
-    rect.y = y;
-    rect.w = w;
-    rect.h = h;
-
-    return rect;
 }
 
 void DrawRect(int r, int g, int b, int a, SDL_Renderer* renderer, SDL_Rect rect){

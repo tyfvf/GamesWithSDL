@@ -28,22 +28,13 @@ int main(int argc, char* argv[]){
     SDL_Texture* fontTexture = SDL_CreateTextureFromSurface(renderer, fontSurface);
     SDL_FreeSurface(fontSurface);
 
-    SDL_Rect font1;
-    font1.x = WINDOW_WIDTH / 2 - 75;
-    font1.y = 50;
-
-    SDL_Rect font2;
-    font2.x = WINDOW_WIDTH / 2 + 50;
-    font2.y = 50;
-
+    SDL_Rect font1 {WINDOW_WIDTH / 2 - 75, 50, 0, 0};
     SDL_QueryTexture(fontTexture, nullptr, nullptr, &font1.w, &font1.h);
+
+    SDL_Rect font2 {WINDOW_WIDTH / 2 + 50, 50, 0, 0};
     SDL_QueryTexture(fontTexture, nullptr, nullptr, &font2.w, &font2.h);
 
-    SDL_Rect ball;
-    ball.w = 20;
-    ball.h = 20;
-    ball.x = WINDOW_WIDTH / 2 - 12;
-    ball.y = WINDOW_HEIGHT / 2 - 12;
+    SDL_Rect ball {WINDOW_WIDTH / 2 - 12, WINDOW_HEIGHT / 2 - 12, 20, 20};
     int x = rand() % 2;
     int choices[2] = {1, -1};
     int ballxvelocity = choices[x];
