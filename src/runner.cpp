@@ -13,15 +13,15 @@ class Entity{
         int textureWidth, textureHeight;
         SDL_Rect srcRect, dstRect;
 
-        Entity(SDL_Texture* tex, int destx, int desty){
+        Entity(SDL_Texture* tex, int destx, int desty, int ncols, int nrows){
             SDL_QueryTexture(tex, nullptr, nullptr, &textureWidth, &textureHeight);
-            frameWidth = textureWidth / 2;
-            frameHeight = textureHeight / 1;
+            frameWidth = textureWidth / ncols;
+            frameHeight = textureHeight / nrows;
             srcRect = {0, 0, frameWidth, frameHeight};
             dstRect = {destx, desty, frameWidth, frameHeight};
         };
 
-        void update(){
+        void animate(){
             srcRect.x += frameWidth;
             if(srcRect.x > frameWidth){
                 srcRect.x = 0;
@@ -58,9 +58,9 @@ int main(int argc, char* argv[]){
     SDL_Rect skyRect {0, 0, 800, 300};
     SDL_Rect groundRect {0, skyRect.h, 800, 100};
 
-    Entity player {playerTex, 100, WINDOW_HEIGHT - 32};
-    Entity snail {snailTex, WINDOW_WIDTH, skyRect.h - 32};
-    Entity fly {flyTex, WINDOW_WIDTH, skyRect.h - 130};
+    Entity player {playerTex, 100, WINDOW_HEIGHT - 32, 2, 2};
+    Entity snail {snailTex, WINDOW_WIDTH, skyRect.h - 32, 2, 1};
+    Entity fly {flyTex, WINDOW_WIDTH, skyRect.h - 130, 2, 1};
 
     SDL_Rect fontRect {WINDOW_WIDTH / 2, 0, 32, 32};
     
@@ -84,8 +84,10 @@ int main(int argc, char* argv[]){
                 switch(event.key.keysym.sym){
                     case SDLK_SPACE:
                         if(player.dstRect.y == groundRect.y - player.dstRect.h){
+                            player.srcRect.y += player.frameHeight;
+                            player.srcRect.x = 0;
                             velocity = -1;
-                            speed = 20;
+                            speed = 15;
                         } 
                         break;
                 }
@@ -97,9 +99,12 @@ int main(int argc, char* argv[]){
 
         if(FPS / frameTime == 4){
             frameTime = 0;
-            player.update();
-            snail.update();
-            fly.update();
+            if(player.dstRect.y >= groundRect.y - player.dstRect.h){
+                player.srcRect.y = 0;
+                player.animate();
+            }
+            snail.animate();
+            fly.animate();
         }
 
         std::stringstream convert;
