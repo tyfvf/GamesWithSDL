@@ -7,36 +7,37 @@
 #include <SDL2/SDL_ttf.h>
 
 bool AABB(SDL_Rect a, SDL_Rect b);
-class Entity{
-    public:
-        int frameWidth, frameHeight;
-        int textureWidth, textureHeight;
-        SDL_Rect srcRect, dstRect;
+struct Entity{
+    int frameWidth, frameHeight;
+    int textureWidth, textureHeight;
+    SDL_Rect srcRect, dstRect;
 
-        Entity(SDL_Texture* tex, int destx, int desty, int ncols, int nrows){
-            SDL_QueryTexture(tex, nullptr, nullptr, &textureWidth, &textureHeight);
-            frameWidth = textureWidth / ncols;
-            frameHeight = textureHeight / nrows;
-            srcRect = {0, 0, frameWidth, frameHeight};
-            dstRect = {destx, desty, frameWidth, frameHeight};
-        };
+    Entity(SDL_Texture* tex, int destx, int desty, int ncols, int nrows){
+        SDL_QueryTexture(tex, nullptr, nullptr, &textureWidth, &textureHeight);
+        frameWidth = textureWidth / ncols;
+        frameHeight = textureHeight / nrows;
+        srcRect = {0, 0, frameWidth, frameHeight};
+        dstRect = {destx, desty, frameWidth, frameHeight};
+    };
 
-        void animate(){
-            srcRect.x += frameWidth;
-            if(srcRect.x > frameWidth){
-                srcRect.x = 0;
-            }
-        };
+    void animate(){
+        srcRect.x += frameWidth;
+        if(srcRect.x > frameWidth){
+            srcRect.x = 0;
+        }
+    };
 };
 
 int main(int argc, char* argv[]){
 
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0){
         std::cout << "SDL could not be initialized " << SDL_GetError() << "\n";
+        return 1;
     }
 
     if(TTF_Init() == -1){
         std::cout << "SDL TTF could not be initialized " << SDL_GetError() << "\n";
+        return 1;
     }
 
     const int WINDOW_WIDTH = 800;
