@@ -7,6 +7,8 @@
 #include <SDL2/SDL_ttf.h>
 
 bool AABB(SDL_Rect a, SDL_Rect b);
+void AudioCallback(void *userdata, Uint8 *stream, int len);
+void PlaySound(const char* path);
 struct Entity{
     int frameWidth, frameHeight;
     int textureWidth, textureHeight;
@@ -28,17 +30,22 @@ struct Entity{
     };
 };
 
+Uint8 *audioPos;
+Uint32 audioLen;
+
 int main(int argc, char* argv[]){
 
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0){
-        std::cout << "SDL could not be initialized " << SDL_GetError() << "\n";
+        std::cerr << "SDL could not be initialized " << SDL_GetError() << "\n";
         return 1;
     }
 
     if(TTF_Init() == -1){
-        std::cout << "SDL TTF could not be initialized " << SDL_GetError() << "\n";
+        std::cerr << "SDL TTF could not be initialized " << SDL_GetError() << "\n";
         return 1;
     }
+
+    PlaySound("res/music.wav");
 
     const int WINDOW_WIDTH = 800;
     const int WINDOW_HEIGHT = 400;
@@ -89,6 +96,11 @@ int main(int argc, char* argv[]){
     int enemy = rand() % 2;
 
     while(gameRunning){
+
+        if(audioLen == 0){
+            SDL_CloseAudio();
+            PlaySound("res/music.wav");
+        }
 
         if(gameMenu){
             while(SDL_PollEvent(&event)){
@@ -206,11 +218,47 @@ int main(int argc, char* argv[]){
             }        
     }
 
+    
     SDL_RenderClear(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 
     return 0;
+}
+
+void AudioCallback(void *userdata, Uint8 *stream, int len){
+    if(audioLen == 0){
+        return;
+    }
+
+    len = ( len > audioLen ? audioLen : len);
+    SDL_memset(stream, 0, len);
+    SDL_MixAudio(stream, audioPos, len, 10);
+    
+    audioPos += len;
+    audioLen -= len;
+}
+
+void PlaySound(const char* path){
+    Uint32 wavLength;
+    Uint8 *wavBuffer;
+    SDL_AudioSpec wavSpec;
+
+    if(SDL_LoadWAV(path, &wavSpec, &wavBuffer, &wavLength) == NULL){
+        std::cerr << "Could not load audio. Error: " << SDL_GetError() << "\n";
+    }
+
+    wavSpec.callback = AudioCallback;
+    wavSpec.userdata = NULL;
+
+    audioPos = wavBuffer;
+    audioLen = wavLength;
+
+    if(SDL_OpenAudio(&wavSpec, NULL) < 0){
+        std::cerr << "Could not open audio. Error: " << SDL_GetError() << "\n";
+    }
+
+    SDL_PauseAudio(0);
 }
 
 bool AABB(SDL_Rect a, SDL_Rect b){
