@@ -2,7 +2,26 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
-void Draw_Rect(SDL_Renderer* renderer, SDL_Rect rect, int r, int g, int b, int a);
+struct Entity{
+    int frame_width, frame_height;
+    int texture_width, texture_height;
+    SDL_Rect src_rect, dst_rect;
+
+    Entity(SDL_Texture* texture, int dest_x, int dest_y, int n_cols, int n_rows){
+        SDL_QueryTexture(texture, nullptr, nullptr, &texture_width, &texture_height);
+        frame_width = texture_width / n_cols;
+        frame_height = texture_height / n_rows;
+        src_rect = {0, 0, frame_width, frame_height};
+        dst_rect = {dest_x, dest_y, frame_width, frame_height};
+    }
+
+    void animate(){
+        src_rect.x += frame_width;
+        if(src_rect.x > texture_width - frame_width){
+            src_rect.x = 0;
+        }
+    }
+};
 
 int main(int argc, char* argv[]){
 
@@ -11,18 +30,37 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    const int WINDOW_WIDTH = 300;
-    const int WINDOW_HEIGHT = 600;
+    const int WINDOW_WIDTH = 288;
+    const int WINDOW_HEIGHT = 512;
     bool game_running = true;
     int player_speed = 4;
     int player_velocity = 1;
-    SDL_Event event;
+    const int FPS = 60;
+    int frame_time = 0;
 
+    SDL_Event event;
     SDL_Window* window = SDL_CreateWindow("Flappy Bird", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    SDL_Rect player {10, 10, 32, 32};
-    SDL_Rect up_pipe {200, 0, 100, 200};
-    SDL_Rect down_pipe {200, 400, 100, 200};
+
+    SDL_Texture* player_texture = IMG_LoadTexture(renderer, "res/flappybird/bird0-sheet.png");
+    SDL_Texture* background_texture = IMG_LoadTexture(renderer, "res/flappybird/background.png");
+    SDL_Texture* ground_texture = IMG_LoadTexture(renderer, "res/flappybird/ground.png");
+    SDL_Texture* pipe_up_texture = IMG_LoadTexture(renderer, "res/flappybird/pipe_up.png");
+    SDL_Texture* pipe_down_texture = IMG_LoadTexture(renderer, "res/flappybird/pipe_down.png");
+
+    Entity player {player_texture, 10, 10, 3, 1};
+
+    SDL_Rect background_rect {0, 0, 0, 0};
+    SDL_QueryTexture(background_texture, nullptr, nullptr, &background_rect.w, &background_rect.h);
+
+    SDL_Rect ground_rect {0, 400, 0, 0};
+    SDL_QueryTexture(ground_texture, nullptr, nullptr, &ground_rect.w, &ground_rect.h);
+
+    SDL_Rect pipe_up_rect {200, -90, 0, 0};
+    SDL_QueryTexture(pipe_up_texture, nullptr, nullptr, &pipe_up_rect.w, &pipe_up_rect.h);
+
+    SDL_Rect pipe_down_rect {200, WINDOW_HEIGHT - 180, 0, 0};
+    SDL_QueryTexture(pipe_down_texture, nullptr, nullptr, &pipe_down_rect.w, &pipe_down_rect.h);
 
     while(game_running){
         while(SDL_PollEvent(&event)){
@@ -47,23 +85,34 @@ int main(int argc, char* argv[]){
             }
         }
 
-        player.y += player_speed * player_velocity;
-        up_pipe.x -= 2;
-        down_pipe.x -= 2;
+        frame_time++;
 
-        if(player.y + player.h >= WINDOW_HEIGHT){
-            player.y = WINDOW_HEIGHT - player.h;
+        if(FPS / frame_time == 4){
+            frame_time = 0;
+            player.animate();
         }
 
-        if(up_pipe.x + up_pipe.w <= 0 && down_pipe.x + down_pipe.w <= 0){
-            up_pipe.x = WINDOW_WIDTH;
-            down_pipe.x = WINDOW_WIDTH;
+        std::cout << frame_time << "\n";
+
+        player.dst_rect.y += player_speed * player_velocity;
+        pipe_up_rect.x -= 2;
+        pipe_down_rect.x -= 2;
+
+        if(player.dst_rect.y + player.dst_rect.h >= ground_rect.y){
+            player.dst_rect.y = ground_rect.y - player.dst_rect.h;
+        }
+
+        if(pipe_up_rect.x + pipe_up_rect.w <= 0 && pipe_down_rect.x + pipe_down_rect.w <= 0){
+            pipe_up_rect.x = WINDOW_WIDTH;
+            pipe_down_rect.x = WINDOW_WIDTH;
         }
 
         SDL_RenderClear(renderer);
-        Draw_Rect(renderer, player, 255, 0, 0, 255);
-        Draw_Rect(renderer, up_pipe, 255, 0, 0, 255);
-        Draw_Rect(renderer, down_pipe, 255, 0, 0, 255);
+        SDL_RenderCopy(renderer, background_texture, nullptr, &background_rect);
+        SDL_RenderCopy(renderer, player_texture, &player.src_rect, &player.dst_rect);
+        SDL_RenderCopy(renderer, pipe_up_texture, nullptr, &pipe_up_rect);
+        SDL_RenderCopy(renderer, pipe_down_texture, nullptr, &pipe_down_rect);
+        SDL_RenderCopy(renderer, ground_texture, nullptr, &ground_rect);
         SDL_RenderPresent(renderer);
     }
 
@@ -73,11 +122,4 @@ int main(int argc, char* argv[]){
     SDL_Quit();
 
     return 0;
-}
-
-void Draw_Rect(SDL_Renderer* renderer, SDL_Rect rect, int r, int g, int b, int a){
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
-    SDL_RenderDrawRect(renderer, &rect);
-    SDL_RenderFillRect(renderer, &rect);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 }

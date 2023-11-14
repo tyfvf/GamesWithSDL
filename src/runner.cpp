@@ -24,7 +24,7 @@ struct Entity{
 
     void animate(){
         srcRect.x += frameWidth;
-        if(srcRect.x > frameWidth){
+        if(srcRect.x > textureWidth - frameWidth){
             srcRect.x = 0;
         }
     };
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    PlaySound("res/music.wav");
+    PlaySound("res/runner/music.wav");
 
     const int WINDOW_WIDTH = 800;
     const int WINDOW_HEIGHT = 400;
@@ -56,12 +56,12 @@ int main(int argc, char* argv[]){
     SDL_Window* window = SDL_CreateWindow("Runner", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    SDL_Texture* skyTex = IMG_LoadTexture(renderer, "res/sky.png");
-    SDL_Texture* groundTex = IMG_LoadTexture(renderer, "res/ground.png");
-    SDL_Texture* playerTex = IMG_LoadTexture(renderer, "res/player.png");
-    SDL_Texture* playerStandTex = IMG_LoadTexture(renderer, "res/player_stand.png");
-    SDL_Texture* snailTex = IMG_LoadTexture(renderer, "res/snail.png");
-    SDL_Texture* flyTex = IMG_LoadTexture(renderer, "res/fly.png");
+    SDL_Texture* skyTex = IMG_LoadTexture(renderer, "res/runner/sky.png");
+    SDL_Texture* groundTex = IMG_LoadTexture(renderer, "res/runner/ground.png");
+    SDL_Texture* playerTex = IMG_LoadTexture(renderer, "res/runner/player.png");
+    SDL_Texture* playerStandTex = IMG_LoadTexture(renderer, "res/runner/player_stand.png");
+    SDL_Texture* snailTex = IMG_LoadTexture(renderer, "res/runner/snail.png");
+    SDL_Texture* flyTex = IMG_LoadTexture(renderer, "res/runner/fly.png");
     TTF_Font* pixelType = TTF_OpenFont("res/pixeltype.ttf", 32);
 
     SDL_Rect skyRect {0, 0, 800, 300};
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]){
 
         if(audioLen == 0){
             SDL_CloseAudio();
-            PlaySound("res/music.wav");
+            PlaySound("res/runner/music.wav");
         }
 
         if(gameMenu){
