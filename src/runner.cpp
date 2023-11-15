@@ -62,7 +62,7 @@ int main(int argc, char* argv[]){
     SDL_Texture* playerStandTex = IMG_LoadTexture(renderer, "res/runner/player_stand.png");
     SDL_Texture* snailTex = IMG_LoadTexture(renderer, "res/runner/snail.png");
     SDL_Texture* flyTex = IMG_LoadTexture(renderer, "res/runner/fly.png");
-    TTF_Font* pixelType = TTF_OpenFont("res/pixeltype.ttf", 32);
+    TTF_Font* pixelType = TTF_OpenFont("res/runner/pixeltype.ttf", 32);
 
     SDL_Rect skyRect {0, 0, 800, 300};
     SDL_Rect groundRect {0, skyRect.h, 800, 100};

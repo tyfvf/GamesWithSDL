@@ -1,6 +1,8 @@
 #include <iostream>
+#include <sstream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 
 bool AABB(SDL_Rect a, SDL_Rect b);
@@ -32,15 +34,25 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+    if(TTF_Init() == -1){
+        std::cerr << "SDL TTF could not be initialized. Error: " << SDL_GetError() << "\n";
+        return 1;
+    }
+
     const int WINDOW_WIDTH = 288;
     const int WINDOW_HEIGHT = 512;
+
     bool game_running = true;
-    int player_speed = 4, player_velocity = 1;
+    bool can_score = true;
+    bool menu = false;
     const int FPS = 60;
-    int frame_time = 0;
+    int score = 0;
+    int player_speed = 4, player_velocity = 1;
     int y = rand() % 200;
-    int angle = 0;
     int angle_velocity = 1, angle_speed = 5;
+    int angle = 0;
+    int frame_time = 0;
+    std::stringstream convert;
 
     SDL_Event event;
     SDL_Window* window = SDL_CreateWindow("Flappy Bird", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
@@ -51,6 +63,10 @@ int main(int argc, char* argv[]){
     SDL_Texture* ground_texture = IMG_LoadTexture(renderer, "res/flappybird/ground.png");
     SDL_Texture* pipe_up_texture = IMG_LoadTexture(renderer, "res/flappybird/pipe_up.png");
     SDL_Texture* pipe_down_texture = IMG_LoadTexture(renderer, "res/flappybird/pipe_down.png");
+    TTF_Font* font = TTF_OpenFont("res/flappybird/flappy-font.ttf", 32);
+    SDL_Texture* font_texture;
+    SDL_Surface* font_surface;
+    SDL_Texture* font_menu_texture;
 
     Entity player {player_texture, 10, 10, 3, 1};
 
@@ -66,79 +82,138 @@ int main(int argc, char* argv[]){
     SDL_Rect pipe_down_rect {200, pipe_up_rect.y + pipe_up_rect.h + 100, 0, 0};
     SDL_QueryTexture(pipe_down_texture, nullptr, nullptr, &pipe_down_rect.w, &pipe_down_rect.h);
 
+    SDL_Rect score_font_rect {WINDOW_WIDTH / 2 - 10, 10, 0, 0};
+    SDL_Rect menu_font_rect {WINDOW_WIDTH / 2, 100, 0, 0};
+
     while(game_running){
-        while(SDL_PollEvent(&event)){
-            if(event.type == SDL_QUIT){
-                game_running = false;
+        if(!menu){
+            while(SDL_PollEvent(&event)){
+                if(event.type == SDL_QUIT){
+                    game_running = false;
+                }
+
+                if(event.type == SDL_KEYDOWN){
+                    switch(event.key.keysym.sym){
+                        case SDLK_SPACE:
+                            player_velocity = -1;
+                            player_speed = 5;
+                            angle_velocity = -1;
+                            angle_speed = 14;
+                    }
+                }
+
+                if(event.type == SDL_KEYUP){
+                    switch(event.key.keysym.sym){
+                        case SDLK_SPACE:
+                            player_velocity = 1;
+                            player_speed = 4;
+                            angle_velocity = 1;
+                            angle_speed = 5;
+                    }
+                }
+            }
+  
+            convert << score;
+            font_surface = TTF_RenderText_Blended(font, convert.str().c_str(), SDL_Color{255, 255, 255, 255});
+            font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
+            SDL_QueryTexture(font_texture, nullptr, nullptr, &score_font_rect.w, &score_font_rect.h);
+            convert.str("");
+            score_font_rect.x = (WINDOW_WIDTH / 2) - (score_font_rect.w / 2);
+
+            frame_time++;
+            angle += angle_velocity * angle_speed;
+
+            if(angle >= 50){
+                angle = 50;
+            }else if (angle <= -30){
+                angle = -30;
             }
 
-            if(event.type == SDL_KEYDOWN){
-                switch(event.key.keysym.sym){
-                    case SDLK_SPACE:
-                        player_velocity = -1;
-                        player_speed = 5;
-                        angle_velocity = -1;
-                        angle_speed = 14;
+            if(FPS / frame_time == 4){
+                frame_time = 0;
+                player.animate();
+            }
+
+            player.dst_rect.y += player_speed * player_velocity;
+            pipe_up_rect.x -= 2;
+            pipe_down_rect.x -= 2;
+            ground_rect.x -= 2;
+
+            if(player.dst_rect.y + player.dst_rect.h >= ground_rect.y){
+                player.dst_rect.y = ground_rect.y - player.dst_rect.h;
+            }
+
+            if(pipe_up_rect.x + pipe_up_rect.w <= 0 && pipe_down_rect.x + pipe_down_rect.w <= 0){
+                y = rand() & 200;
+                pipe_up_rect.x = WINDOW_WIDTH;
+                pipe_up_rect.y = -(y);
+                pipe_down_rect.x = WINDOW_WIDTH;
+                pipe_down_rect.y = pipe_up_rect.y + pipe_up_rect.h + 100;
+                can_score = true;
+            }
+
+            if(ground_rect.x <= -48){
+                ground_rect.x = 0;
+            }
+
+            if(AABB(player.dst_rect, pipe_up_rect) || AABB(player.dst_rect, pipe_down_rect)){
+                menu = true;
+            }
+
+            if(player.dst_rect.x > pipe_up_rect.x && can_score){
+                score++;
+                can_score = false;
+            }
+
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, background_texture, nullptr, &background_rect);
+            SDL_RenderCopyEx(renderer, player_texture, &player.src_rect, &player.dst_rect, angle, nullptr, SDL_FLIP_NONE);
+            SDL_RenderCopy(renderer, pipe_up_texture, nullptr, &pipe_up_rect);
+            SDL_RenderCopy(renderer, pipe_down_texture, nullptr, &pipe_down_rect);
+            SDL_RenderCopy(renderer, ground_texture, nullptr, &ground_rect);
+            SDL_RenderCopy(renderer, font_texture, nullptr, &score_font_rect);
+            SDL_RenderPresent(renderer);
+        }else{
+            while(SDL_PollEvent(&event)){
+                if(event.type == SDL_QUIT){
+                    game_running = false;
+                }
+
+                if(event.type == SDL_KEYDOWN){
+                    switch(event.key.keysym.sym){
+                        case SDLK_r:
+                            y = rand() & 200;
+                            pipe_up_rect.x = WINDOW_WIDTH;
+                            pipe_up_rect.y = -(y);
+                            pipe_down_rect.x = WINDOW_WIDTH;
+                            pipe_down_rect.y = pipe_up_rect.y + pipe_up_rect.h + 100;
+                            player_velocity = 1;
+                            player_speed = 4;
+                            angle_velocity = 1;
+                            angle_speed = 5;
+                            can_score = true;
+                            menu = false;
+                            score = 0;
+
+                    }
                 }
             }
 
-            if(event.type == SDL_KEYUP){
-                switch(event.key.keysym.sym){
-                    case SDLK_SPACE:
-                        player_velocity = 1;
-                        player_speed = 4;
-                        angle_velocity = 1;
-                        angle_speed = 5;
-                }
-            }
+            font_surface = TTF_RenderText_Blended(font, "Press R to reset", SDL_Color{255, 255, 255, 255});
+            font_menu_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
+            SDL_QueryTexture(font_menu_texture, nullptr, nullptr, &menu_font_rect.w, &menu_font_rect.h);
+            menu_font_rect.x = (WINDOW_WIDTH / 2) - (menu_font_rect.w / 2);
+            
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, background_texture, nullptr, &background_rect);
+            SDL_RenderCopyEx(renderer, player_texture, &player.src_rect, &player.dst_rect, angle, nullptr, SDL_FLIP_NONE);
+            SDL_RenderCopy(renderer, pipe_up_texture, nullptr, &pipe_up_rect);
+            SDL_RenderCopy(renderer, pipe_down_texture, nullptr, &pipe_down_rect);
+            SDL_RenderCopy(renderer, ground_texture, nullptr, &ground_rect);
+            SDL_RenderCopy(renderer, font_texture, nullptr, &score_font_rect);
+            SDL_RenderCopy(renderer, font_menu_texture, nullptr, &menu_font_rect);
+            SDL_RenderPresent(renderer);
         }
-
-        frame_time++;
-        angle += angle_velocity * angle_speed;
-
-        if(angle >= 50){
-            angle = 50;
-        }else if (angle <= -30){
-            angle = -30;
-        }
-
-        if(FPS / frame_time == 4){
-            frame_time = 0;
-            player.animate();
-        }
-
-        player.dst_rect.y += player_speed * player_velocity;
-        pipe_up_rect.x -= 2;
-        pipe_down_rect.x -= 2;
-        ground_rect.x -= 2;
-
-        if(player.dst_rect.y + player.dst_rect.h >= ground_rect.y){
-            player.dst_rect.y = ground_rect.y - player.dst_rect.h;
-        }
-
-        if(pipe_up_rect.x + pipe_up_rect.w <= 0 && pipe_down_rect.x + pipe_down_rect.w <= 0){
-            y = rand() & 200;
-            pipe_up_rect.x = WINDOW_WIDTH;
-            pipe_up_rect.y = -(y);
-            pipe_down_rect.x = WINDOW_WIDTH;
-            pipe_down_rect.y = pipe_up_rect.y + pipe_up_rect.h + 100;
-        }
-
-        if(ground_rect.x <= -48){
-            ground_rect.x = 0;
-        }
-
-        if(AABB(player.dst_rect, pipe_up_rect) || AABB(player.dst_rect, pipe_down_rect)){
-            std::cout << "HIT" << "\n";
-        }
-
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, background_texture, nullptr, &background_rect);
-        SDL_RenderCopyEx(renderer, player_texture, &player.src_rect, &player.dst_rect, angle, nullptr, SDL_FLIP_NONE);
-        SDL_RenderCopy(renderer, pipe_up_texture, nullptr, &pipe_up_rect);
-        SDL_RenderCopy(renderer, pipe_down_texture, nullptr, &pipe_down_rect);
-        SDL_RenderCopy(renderer, ground_texture, nullptr, &ground_rect);
-        SDL_RenderPresent(renderer);
     }
 
     SDL_RenderClear(renderer);
