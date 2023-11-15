@@ -95,6 +95,7 @@ int main(int argc, char* argv[]){
         player.dst_rect.y += player_speed * player_velocity;
         pipe_up_rect.x -= 2;
         pipe_down_rect.x -= 2;
+        ground_rect.x -= 2;
 
         if(player.dst_rect.y + player.dst_rect.h >= ground_rect.y){
             player.dst_rect.y = ground_rect.y - player.dst_rect.h;
@@ -103,6 +104,10 @@ int main(int argc, char* argv[]){
         if(pipe_up_rect.x + pipe_up_rect.w <= 0 && pipe_down_rect.x + pipe_down_rect.w <= 0){
             pipe_up_rect.x = WINDOW_WIDTH;
             pipe_down_rect.x = WINDOW_WIDTH;
+        }
+
+        if(ground_rect.x <= -48){
+            ground_rect.x = 0;
         }
 
         SDL_RenderClear(renderer);
