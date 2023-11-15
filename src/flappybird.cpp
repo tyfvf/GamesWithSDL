@@ -2,6 +2,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+
+bool AABB(SDL_Rect a, SDL_Rect b);
 struct Entity{
     int frame_width, frame_height;
     int texture_width, texture_height;
@@ -33,10 +35,12 @@ int main(int argc, char* argv[]){
     const int WINDOW_WIDTH = 288;
     const int WINDOW_HEIGHT = 512;
     bool game_running = true;
-    int player_speed = 4;
-    int player_velocity = 1;
+    int player_speed = 4, player_velocity = 1;
     const int FPS = 60;
     int frame_time = 0;
+    int y = rand() % 200;
+    int angle = 0;
+    int angle_velocity = 1, angle_speed = 5;
 
     SDL_Event event;
     SDL_Window* window = SDL_CreateWindow("Flappy Bird", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
@@ -56,10 +60,10 @@ int main(int argc, char* argv[]){
     SDL_Rect ground_rect {0, 400, 0, 0};
     SDL_QueryTexture(ground_texture, nullptr, nullptr, &ground_rect.w, &ground_rect.h);
 
-    SDL_Rect pipe_up_rect {200, -90, 0, 0};
+    SDL_Rect pipe_up_rect {200, -(y), 0, 0};
     SDL_QueryTexture(pipe_up_texture, nullptr, nullptr, &pipe_up_rect.w, &pipe_up_rect.h);
 
-    SDL_Rect pipe_down_rect {200, WINDOW_HEIGHT - 180, 0, 0};
+    SDL_Rect pipe_down_rect {200, pipe_up_rect.y + pipe_up_rect.h + 100, 0, 0};
     SDL_QueryTexture(pipe_down_texture, nullptr, nullptr, &pipe_down_rect.w, &pipe_down_rect.h);
 
     while(game_running){
@@ -73,6 +77,8 @@ int main(int argc, char* argv[]){
                     case SDLK_SPACE:
                         player_velocity = -1;
                         player_speed = 5;
+                        angle_velocity = -1;
+                        angle_speed = 14;
                 }
             }
 
@@ -81,11 +87,20 @@ int main(int argc, char* argv[]){
                     case SDLK_SPACE:
                         player_velocity = 1;
                         player_speed = 4;
+                        angle_velocity = 1;
+                        angle_speed = 5;
                 }
             }
         }
 
         frame_time++;
+        angle += angle_velocity * angle_speed;
+
+        if(angle >= 50){
+            angle = 50;
+        }else if (angle <= -30){
+            angle = -30;
+        }
 
         if(FPS / frame_time == 4){
             frame_time = 0;
@@ -102,17 +117,24 @@ int main(int argc, char* argv[]){
         }
 
         if(pipe_up_rect.x + pipe_up_rect.w <= 0 && pipe_down_rect.x + pipe_down_rect.w <= 0){
+            y = rand() & 200;
             pipe_up_rect.x = WINDOW_WIDTH;
+            pipe_up_rect.y = -(y);
             pipe_down_rect.x = WINDOW_WIDTH;
+            pipe_down_rect.y = pipe_up_rect.y + pipe_up_rect.h + 100;
         }
 
         if(ground_rect.x <= -48){
             ground_rect.x = 0;
         }
 
+        if(AABB(player.dst_rect, pipe_up_rect) || AABB(player.dst_rect, pipe_down_rect)){
+            std::cout << "HIT" << "\n";
+        }
+
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background_texture, nullptr, &background_rect);
-        SDL_RenderCopy(renderer, player_texture, &player.src_rect, &player.dst_rect);
+        SDL_RenderCopyEx(renderer, player_texture, &player.src_rect, &player.dst_rect, angle, nullptr, SDL_FLIP_NONE);
         SDL_RenderCopy(renderer, pipe_up_texture, nullptr, &pipe_up_rect);
         SDL_RenderCopy(renderer, pipe_down_texture, nullptr, &pipe_down_rect);
         SDL_RenderCopy(renderer, ground_texture, nullptr, &ground_rect);
@@ -125,4 +147,17 @@ int main(int argc, char* argv[]){
     SDL_Quit();
 
     return 0;
+}
+
+bool AABB(SDL_Rect a, SDL_Rect b){
+    if(
+        a.x + a.w >= b.x &&
+        b.x + b.w >= a.x &&
+        a.y + a.h >= b.y &&
+        b.y + b.h >= a.y
+    ){
+        return true;
+    }else{
+        return false;
+    }
 }
