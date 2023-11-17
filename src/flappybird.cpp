@@ -4,7 +4,11 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
+Uint8* audio_position;
+Uint32 audio_length;
+int volume = 0;
 
+void Play_Sound(const char* path);
 bool AABB(SDL_Rect a, SDL_Rect b);
 struct Entity{
     int frame_width, frame_height;
@@ -95,6 +99,8 @@ int main(int argc, char* argv[]){
                 if(event.type == SDL_KEYDOWN){
                     switch(event.key.keysym.sym){
                         case SDLK_SPACE:
+                            volume = 100;
+                            Play_Sound("res/flappybird/sfx_wing.wav");
                             player_velocity = -1;
                             player_speed = 5;
                             angle_velocity = -1;
@@ -157,10 +163,14 @@ int main(int argc, char* argv[]){
             }
 
             if(AABB(player.dst_rect, pipe_up_rect) || AABB(player.dst_rect, pipe_down_rect)){
+                volume = 100;
+                SDL_CloseAudio();
+                Play_Sound("res/flappybird/hit.wav");
                 menu = true;
             }
 
             if(player.dst_rect.x > pipe_up_rect.x && can_score){
+                Play_Sound("res/flappybird/point.wav");
                 score++;
                 can_score = false;
             }
@@ -222,6 +232,49 @@ int main(int argc, char* argv[]){
     SDL_Quit();
 
     return 0;
+}
+
+void Play_Sound(const char* path){
+
+    auto Audio_Callback = [](void* userdata, Uint8* stream, int length){
+        if(audio_length == 0){
+            return;
+        }
+
+        length = ( (Uint32)length > audio_length ? audio_length : length);
+        SDL_memset(stream, 0 , length);
+        SDL_MixAudio(stream, audio_position, length, volume);
+
+        audio_position += length;
+        audio_length -= length;
+
+        if(length == 0){
+            SDL_CloseAudio();
+        }
+    };
+
+    Uint32 wav_length;
+    Uint8* wav_buffer;
+    SDL_AudioSpec wav_spec;
+
+    if(SDL_LoadWAV(path, &wav_spec, &wav_buffer, &wav_length) == NULL){
+        std::cerr << "Could not load audio. Error: " << SDL_GetError() << "\n";
+    }
+
+    wav_spec.callback = Audio_Callback;
+    wav_spec.userdata = NULL;
+
+    audio_position = wav_buffer;
+    audio_length = wav_length;
+
+    
+    if(SDL_OpenAudio(&wav_spec, NULL)){
+        std::cerr << "Could not open audio. Error: " << SDL_GetError() << "\n";
+    }
+    
+
+    SDL_PauseAudio(0);
+
 }
 
 bool AABB(SDL_Rect a, SDL_Rect b){
