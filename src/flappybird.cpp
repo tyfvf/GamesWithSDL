@@ -3,12 +3,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 
-Uint8* audio_position;
-Uint32 audio_length;
-int volume = 0;
-
-void Play_Sound(const char* path);
 bool AABB(SDL_Rect a, SDL_Rect b);
 struct Entity{
     int frame_width, frame_height;
@@ -43,8 +39,14 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) == -1){
+        std::cerr << "SDL Mixer could not be initialized. Error: " << SDL_GetError() << "\n";
+        return 1;
+    }
+
     const int WINDOW_WIDTH = 288;
     const int WINDOW_HEIGHT = 512;
+    const int volume = (MIX_MAX_VOLUME * 50) / 100;
 
     bool game_running = true;
     bool can_score = true;
@@ -57,6 +59,22 @@ int main(int argc, char* argv[]){
     int angle = 0;
     int frame_time = 0;
     std::stringstream convert;
+
+    Mix_Chunk* flap_sound = NULL;
+    flap_sound = Mix_LoadWAV("res/flappybird/sfx_wing.wav");
+
+    Mix_Chunk* hit_sound = NULL;
+    hit_sound = Mix_LoadWAV("res/flappybird/hit.wav");
+
+    Mix_Chunk* point_sound = NULL;
+    point_sound = Mix_LoadWAV("res/flappybird/point.wav");
+
+    if(flap_sound == NULL || point_sound == NULL || hit_sound == NULL){
+        std::cerr << "Failed to load sound. Error: " << SDL_GetError() << "\n";
+        return 1;
+    }
+
+    Mix_Volume(-1, volume);
 
     SDL_Event event;
     SDL_Window* window = SDL_CreateWindow("Flappy Bird", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
@@ -99,8 +117,7 @@ int main(int argc, char* argv[]){
                 if(event.type == SDL_KEYDOWN){
                     switch(event.key.keysym.sym){
                         case SDLK_SPACE:
-                            volume = 100;
-                            Play_Sound("res/flappybird/sfx_wing.wav");
+                            Mix_PlayChannel(-1, flap_sound, 0);
                             player_velocity = -1;
                             player_speed = 5;
                             angle_velocity = -1;
@@ -163,14 +180,12 @@ int main(int argc, char* argv[]){
             }
 
             if(AABB(player.dst_rect, pipe_up_rect) || AABB(player.dst_rect, pipe_down_rect)){
-                volume = 100;
-                SDL_CloseAudio();
-                Play_Sound("res/flappybird/hit.wav");
+                Mix_PlayChannel(-1, hit_sound, 0);
                 menu = true;
             }
 
             if(player.dst_rect.x > pipe_up_rect.x && can_score){
-                Play_Sound("res/flappybird/point.wav");
+                Mix_PlayChannel(-1, point_sound, 0);
                 score++;
                 can_score = false;
             }
@@ -226,55 +241,15 @@ int main(int argc, char* argv[]){
         }
     }
 
+    Mix_FreeChunk(hit_sound);
+    Mix_FreeChunk(point_sound);
+    Mix_FreeChunk(flap_sound);
     SDL_RenderClear(renderer);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 
     return 0;
-}
-
-void Play_Sound(const char* path){
-
-    auto Audio_Callback = [](void* userdata, Uint8* stream, int length){
-        if(audio_length == 0){
-            return;
-        }
-
-        length = ( (Uint32)length > audio_length ? audio_length : length);
-        SDL_memset(stream, 0 , length);
-        SDL_MixAudio(stream, audio_position, length, volume);
-
-        audio_position += length;
-        audio_length -= length;
-
-        if(length == 0){
-            SDL_CloseAudio();
-        }
-    };
-
-    Uint32 wav_length;
-    Uint8* wav_buffer;
-    SDL_AudioSpec wav_spec;
-
-    if(SDL_LoadWAV(path, &wav_spec, &wav_buffer, &wav_length) == NULL){
-        std::cerr << "Could not load audio. Error: " << SDL_GetError() << "\n";
-    }
-
-    wav_spec.callback = Audio_Callback;
-    wav_spec.userdata = NULL;
-
-    audio_position = wav_buffer;
-    audio_length = wav_length;
-
-    
-    if(SDL_OpenAudio(&wav_spec, NULL)){
-        std::cerr << "Could not open audio. Error: " << SDL_GetError() << "\n";
-    }
-    
-
-    SDL_PauseAudio(0);
-
 }
 
 bool AABB(SDL_Rect a, SDL_Rect b){
