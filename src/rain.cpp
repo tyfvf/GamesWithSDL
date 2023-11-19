@@ -9,10 +9,6 @@ const int BALL_RADIUS = 15;
 
 struct vector2 {
     int x, y;
-    vector2(){
-        x = 0;
-        y = 0;
-    };
     vector2(int x, int y){
         this->x = x;
         this->y = y;
