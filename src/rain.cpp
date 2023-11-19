@@ -1,9 +1,7 @@
-#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 #include <iostream>
 #include <vector>
-#include <ctime>
 
 const int BALL_RADIUS = 15;
 
