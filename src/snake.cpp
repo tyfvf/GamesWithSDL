@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
 void DrawRect(int r, int g, int b, int a, SDL_Renderer* renderer, SDL_Rect rect);
